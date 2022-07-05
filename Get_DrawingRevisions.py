@@ -4,6 +4,8 @@ import collections
 from pathlib import Path
 import tkinter as tk
 import tkinter.messagebox as msgbox
+from datetime import date
+import subprocess
 
 # The function of this code is to loop through the folder, separate out the drawing numbers & revision numbers,
 # and check for drawings with multiple revisions, keep the largest revision of that drawing numbers and
@@ -13,32 +15,68 @@ import tkinter.messagebox as msgbox
 class MainWindow(tk.Tk):
     def __init__(self):
         super().__init__()
+
+        # Window Title Bar
         self.title("Get Drawing Revisions...")
-        self.height = 200
+        # Window positioning
+        self.height = 300
         self.width = 800
         self.screenwidth = self.winfo_screenwidth()
         self.screenheight = self.winfo_screenheight()
         self.paddingw = (self.screenwidth/2) - (self.width/2)
         self.paddingh = (self.screenheight/2) - (self.height/2)
         self.geometry('%dx%d+%d+%d' % (self.width, self.height, self.paddingw, self.paddingh))
-        self.fontsize = ('Arial', 15)
+
+        # Window GUI Design
+        self.fontsize = ('Arial Bold', 15)
+        bgcolor = "#282C34"
+        self.configure(background=bgcolor)
+        self.copyright = u"\u00A9" "CopyRight by Jayden Ang"
 
         # Put in the directory that going to be the folder of all files
-        self.drawingdir = "C:\\Users\\Ang Chun Hang\\Documents\\SolidWork_Assy\\Offline Drawings"
-
+        self.drawingdir = os.getcwd()
+        self.folderpath = "explorer "
         # Define some empty lists
         self.drawingcol = []
         self.revisioncol = []
         self.drawinglist = []
 
-        self.label1 = tk.Label(self, text="Your drawings are from", font=self.fontsize)
-        self.label2 = tk.Label(self, text=self.drawingdir, font=self.fontsize)
-        self.button1 = tk.Button(self, text="Let's Go!", command=self.getrevision, font=self.fontsize)
-        self.label1.pack(side=tk.TOP, padx=50, pady=25)
-        self.label2.pack(side=tk.TOP)
-        self.button1.pack(side=tk.BOTTOM, padx=50, pady=10)
+        self.input = date.today()
+        self.filedate = self.input.strftime("%Y%m%d")
 
+        self.label1 = tk.Label(self,
+                               text="You are going to get the drawing revisions from",
+                               background=bgcolor,
+                               foreground="#FFFFFF",
+                               font=self.fontsize)
+        self.label2 = tk.Label(self,
+                               text=self.drawingdir,
+                               font=('Arial', 15, 'underline'),
+                               foreground="#0000EE",
+                               cursor="hand2",
+                               background=bgcolor)
 
+        self.button1 = tk.Button(self,
+                                 text="Export Drawing Revisions",
+                                 command=self.getrevision,
+                                 height=500,
+                                 cursor="hand2",
+                                 bg=bgcolor,
+                                 activebackground="#B5F9F2",
+                                 foreground="#FFFFFF",
+                                 font=self.fontsize,
+                                 borderwidth=5)
+
+        self.label3 = tk.Label(self,
+                               text=self.copyright,
+                               background=bgcolor,
+                               foreground="#d9d9d9")
+
+        self.label1.pack(side=tk.TOP, padx=50, pady=30)
+        self.label2.pack(side=tk.TOP, padx=50)
+        self.label2.bind("<Button>", lambda e: self.callback(self.drawingdir))
+        self.label3.pack(side=tk.BOTTOM)
+        self.button1.pack(side=tk.BOTTOM, padx=50, pady=20)
 
         self.bind('<Escape>', lambda e: exit())
 
@@ -88,7 +126,7 @@ class MainWindow(tk.Tk):
         wb = openpyxl.Workbook()
         sheet = wb.active
         sheet.title = "Offline drawings revision"
-        wb.save('Offline drawing revision.xlsx')
+        wb.save(f'{self.filedate}_DrawingRevision.xlsx')
 
         # Loop through new drawingcol and write drawingcol into column A and revisioncol into column B.
         for i in range(len(self.drawingcol)):
@@ -96,14 +134,20 @@ class MainWindow(tk.Tk):
             sheet.cell(row=i+1, column=2).value = self.revisioncol[i]
 
         # Save workbook after writing everything.
-        wb.save('Offline drawing revision.xlsx')
+        wb.save(f'{self.filedate}_DrawingRevision.xlsx')
 
         # Open up that excel after saving.
         if msgbox.askyesno("It's done", "Do you want to open the file?"):
-            excelpath = Path('Offline drawing revision.xlsx').resolve()
+            excelpath = Path(f'{self.filedate}_DrawingRevision.xlsx').resolve()
             os.system(f'start excel.exe "{excelpath}"')
+            self.after(3000, self.exit())
         else:
             msgbox.showinfo("Message", "It's done anyway, go check it out.")
+            self.after(3000, self.exit())
+
+    def callback(self, link):
+        link = self.folderpath + link
+        subprocess.Popen(link)
 
     def exit(self):
         self.destroy()
